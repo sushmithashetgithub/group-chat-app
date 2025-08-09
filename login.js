@@ -1,4 +1,3 @@
-
 document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
@@ -15,11 +14,23 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         const data = await res.json();
 
         if (res.ok) {
-            alert("Login Successful!");
-            localStorage.setItem("token", data.token);
-            window.location.href = "chat.html"; // Redirect to chat page
-        } else {
-            alert(data.message || "Login failed");
+            // Save token
+            localStorage.setItem('token', data.token);
+
+            // Save username (make sure backend sends `username` in response)
+            localStorage.setItem('username', data.username);
+
+            // Redirect to chat page
+            window.location.href = 'chat.html';
+        } 
+        else if (res.status === 404) {
+            alert('User not found. Please sign up.');
+        } 
+        else if (res.status === 401) {
+            alert('Incorrect password. Please try again.');
+        } 
+        else {
+            alert(data.message || 'Login failed');
         }
     } catch (error) {
         console.error("Error logging in:", error);
