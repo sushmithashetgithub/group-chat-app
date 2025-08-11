@@ -1,25 +1,32 @@
-// backend/routes/messageRoutes.js
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 const Message = require('../models/messageModel');
-const User = require('../models/userModel'); // for joining user name
+const User = require('../models/userModel');
 const auth = require('../middleware/auth');
 
-// Get recent messages with usernames
+// Get recent messages with optional "after" filter
 router.get('/recent', auth, async (req, res) => {
   try {
+    const after = req.query.after;
+    const whereClause = {};
+
+    if (after && after !== '0') {
+      whereClause.createdAt = { [Op.gt]: new Date(after) };
+    }
+
     const messages = await Message.findAll({
+      where: whereClause,
       order: [['createdAt', 'ASC']],
       include: [
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'name'] // only send needed fields
+          attributes: ['id', 'name']
         }
       ]
     });
 
-    // Transform into { id, text, from, createdAt }
     const formatted = messages.map(msg => ({
       id: msg.id,
       text: msg.text,
@@ -34,7 +41,7 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
-// Create a new message (also saves in DB)
+// Create a new message
 router.post('/', auth, async (req, res) => {
   try {
     const { text } = req.body;
@@ -43,7 +50,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     const saved = await Message.create({
-      userId: req.user.id, // from auth middleware
+      userId: req.user.id,
       text
     });
 
